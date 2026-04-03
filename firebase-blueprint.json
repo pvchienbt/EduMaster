@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "HistoryItem": {
+      "title": "HistoryItem",
+      "description": "A generated script history item",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this history item"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date the item was created"
+        },
+        "idea": {
+          "type": "string",
+          "description": "The original idea"
+        },
+        "result": {
+          "type": "object",
+          "description": "The generated result JSON"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Timestamp of creation"
+        }
+      },
+      "required": ["userId", "date", "idea", "result", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/history/{historyId}": {
+      "schema": {
+        "$ref": "#/entities/HistoryItem"
+      },
+      "description": "Stores user generated script history"
+    }
+  }
+}

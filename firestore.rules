@@ -1,0 +1,65 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: history
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required) - The ID of the user who owns this history item
+    //   - date: string (required) - The date the item was created
+    //   - idea: string (required) - The original idea
+    //   - result: map (required) - The generated result JSON
+    //   - createdAt: number (required) - Timestamp of creation
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidHistoryItem(data) {
+      return hasOnlyAllowedFields(['userId', 'date', 'idea', 'result', 'createdAt']) &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() < 100 &&
+             data.date is string && data.date.size() > 0 && data.date.size() < 100 &&
+             data.idea is string && data.idea.size() > 0 && data.idea.size() < 10000 &&
+             data.result is map &&
+             data.createdAt is number;
+    }
+
+    match /history/{historyId} {
+      allow read: if isAuthenticated() && isDocOwner();
+      allow create: if isAuthenticated() && 
+                    isValidHistoryItem(request.resource.data) && 
+                    isOwner(request.resource.data.userId);
+      allow update: if isAuthenticated() && 
+                    isDocOwner() &&
+                    isValidHistoryItem(request.resource.data) &&
+                    request.resource.data.userId == resource.data.userId &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+  }
+}
